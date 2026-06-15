@@ -1,12 +1,72 @@
 {
-  "team": "TODO-team-name",
+  "team": "observathon-team",
   "schema_version": 1,
   "findings": [
     {
+      "fault_class": "arithmetic_error",
+      "evidence": {"metric": "wrong_total_risk", "observed": "Initial prompt did not require exact subtotal/discount/shipping arithmetic; telemetry logs has_parseable_total and tool traces for verification.", "trace_ids": []},
+      "root_cause": "The shipped prompt encouraged a free-form total and temperature was 1.6, making the LLM estimate instead of computing deterministically.",
+      "suggested_fix": "Rewrite prompt with the exact floor discount formula; set temperature low; enable verify and self_consistency."
+    },
+    {
+      "fault_class": "fabrication",
+      "evidence": {"metric": "unsupported_total_risk", "observed": "Initial prompt allowed a total even when stock/product/destination data was missing; wrapper now logs parseable totals and status.", "trace_ids": []},
+      "root_cause": "The agent was not instructed to ground answers only in check_stock/get_discount/calc_shipping outputs.",
+      "suggested_fix": "Prompt requires tool-first grounding and refusal with no total when product is unknown, out of stock, invalid, or unserviceable."
+    },
+    {
+      "fault_class": "tool_overuse",
+      "evidence": {"metric": "repeated_tool", "observed": "Wrapper records tools, tool_count, repeated_tool, steps, and trace for every request.", "trace_ids": []},
+      "root_cause": "No tool budget and no instruction limiting calls allowed redundant tool use and loops.",
+      "suggested_fix": "Set tool_budget to 4, max_steps to 7, enable loop_guard, and instruct each tool at most once per field."
+    },
+    {
+      "fault_class": "pii_leak",
+      "evidence": {"metric": "pii_redactions", "observed": "Wrapper scans and redacts answer text before returning/logging; logs include pii_redactions.", "trace_ids": []},
+      "root_cause": "Initial config had redact_pii false and prompt did not forbid repeating customer contact details.",
+      "suggested_fix": "Enable redact_pii, use telemetry.redact in wrapper, and add a no-PII prompt rule."
+    },
+    {
+      "fault_class": "prompt_injection",
+      "evidence": {"metric": "sanitized", "observed": "Wrapper marks sanitized=true when order notes or fake system/developer/tool instructions appear.", "trace_ids": []},
+      "root_cause": "Customer notes were treated as instructions, so hidden fake prices or role text could override tool facts.",
+      "suggested_fix": "Prompt treats notes as untrusted data; wrapper neutralizes suspicious note lines and reminds the model to use tools only."
+    },
+    {
+      "fault_class": "tool_failure",
+      "evidence": {"metric": "config_audit", "observed": "Initial config disabled unicode normalization and included a catalog_override marking macbook out of stock.", "trace_ids": []},
+      "root_cause": "Misconfigured normalization and catalog override can make valid products/cities fail.",
+      "suggested_fix": "Enable normalize_unicode and clear catalog_override."
+    },
+    {
+      "fault_class": "error_spike",
+      "evidence": {"metric": "status_and_tool_errors", "observed": "Wrapper logs status, error, error_message, tools, and trace-derived metadata for each request; initial config also set a high tool_error_rate.", "trace_ids": []},
+      "root_cause": "Intermittent tool/API failures were not retried in the shipped config.",
+      "suggested_fix": "Enable retry with bounded attempts and backoff; wrapper catches call_next exceptions and retries once."
+    },
+    {
       "fault_class": "latency_spike",
-      "evidence": {"metric": "latency_p95_ms", "observed": "TODO from your telemetry", "trace_ids": []},
-      "root_cause": "TODO: what config knob or behavior causes it?",
-      "suggested_fix": "TODO: config change and/or wrapper mitigation"
+      "evidence": {"metric": "latency_ms_wall_ms", "observed": "Wrapper logs wall_ms and meta.latency_ms; long requests correlate with extra planning/self-consistency and redundant tool calls.", "trace_ids": []},
+      "root_cause": "Planner, large context, verbose system text, and repeated tool calls increase tail latency.",
+      "suggested_fix": "Use a concise prompt, smaller context, loop guard, low tool_budget, cache, and avoid unnecessary self-consistency."
+    },
+    {
+      "fault_class": "cost_blowup",
+      "evidence": {"metric": "usage_total_tokens_cost_usd", "observed": "Wrapper records usage and cost_usd; self-consistency/planner multiply prompt tokens.", "trace_ids": []},
+      "root_cause": "Verbose prompts, extra planning, and duplicate samples burn tokens without adding task value.",
+      "suggested_fix": "Use a short prompt, disable planner, reduce self_consistency when stable, cap output, and cache repeated requests."
+    },
+    {
+      "fault_class": "quality_drift",
+      "evidence": {"metric": "turn_index_quality", "observed": "Wrapper logs session_id and turn_index so answers can be grouped by later turns; config had nonzero session_drift_rate.", "trace_ids": []},
+      "root_cause": "Long sessions allow accumulated context/noise to degrade order extraction and arithmetic.",
+      "suggested_fix": "Reset context periodically and keep context_size small."
+    },
+    {
+      "fault_class": "infinite_loop",
+      "evidence": {"metric": "repeated_tool_steps_status", "observed": "Wrapper logs steps, tool_count, repeated_tool, and non-ok status to catch loops/max-step behavior.", "trace_ids": []},
+      "root_cause": "The shipped config disabled loop_guard and had no useful tool budget.",
+      "suggested_fix": "Enable loop_guard, reduce max_steps, and cap tool_budget."
     }
   ]
 }

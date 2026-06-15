@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+args=()
+has_phase=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --concurrency)
+      shift
+      if [[ $# -gt 0 ]]; then
+        shift
+      fi
+      ;;
+    --practice|--testset)
+      current="$1"
+      has_phase=1
+      args+=("$current")
+      shift
+      if [[ "$current" == "--testset" && $# -gt 0 ]]; then
+        args+=("$1")
+        shift
+      fi
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ "$has_phase" -eq 0 ]]; then
+  args+=("--practice")
+fi
+
+exec "$ROOT_DIR/observathon-sim" "${args[@]}"

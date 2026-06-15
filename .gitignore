@@ -1,5 +1,9 @@
 # binaries are distributed separately per phase (NOT in the public repo)
-bin/
+bin/*
+!bin/practice/
+!bin/practice/observathon-sim
+!bin/public/
+!bin/public/observathon-sim
 # python / runtime
 __pycache__/
 *.pyc
