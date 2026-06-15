@@ -1,0 +1,21 @@
+{
+  "team": "DTTBfine",
+  "phase": "private",
+  "headline": 89.19,
+  "sub": {
+    "correct": 0.65,
+    "quality": 0.7844,
+    "error": 1.0,
+    "latency": 0.5357,
+    "cost": 0.0,
+    "drift": 0.6956,
+    "prompt": 0.7792
+  },
+  "diag_f1": 1.0,
+  "n": 80,
+  "n_correct": 49,
+  "judge_mode": "offline",
+  "weights_hash": "e81a8ed58d93",
+  "key_hash": "7e3905b75db0",
+  "sig": "660e79094b5521301959a49192b32a8f1d81083f02369bf0204d96c27b4a84ef"
+}
